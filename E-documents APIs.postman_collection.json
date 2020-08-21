@@ -1,0 +1,782 @@
+{
+	"info": {
+		"_postman_id": "886c740f-713e-432c-bcdd-4bd7b72ffd34",
+		"name": "E-documents APIs",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "token",
+			"item": [
+				{
+					"name": "GetToken",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"id": "5a83630f-bb33-4683-a887-836989150b05",
+								"exec": [
+									"pm.collectionVariables.set(\"urltoken\", \"https://qaesiigov3apiauthenticationservice.azurewebsites.net\");\r",
+									"//var userlucho = pm.collectionVariables.get(\"UserName\")\r",
+									"pm.collectionVariables.set(\"userName\", \"siigo@techmf.com\");\r",
+									"pm.collectionVariables.set(\"password\", \"1111\");\r",
+									"pm.collectionVariables.set(\"companyKey\", \"SIIGOTECHMF\");"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"id": "8c4bc03a-b5b2-4ac7-9da4-0467ec308379",
+								"exec": [
+									"//Captura el código de estado que viene en el archivo\r",
+									"testStatus = pm.variables.get(\"statusGetToken\");\r",
+									"scenario = pm.variables.get(\"scenario\");\r",
+									"//Obtiene el json de respuesta de la ejecución\r",
+									"if (responseBody != \"\") {\r",
+									"    responseData = JSON.parse(responseBody);\r",
+									"}\r",
+									"pm.environment.set(\"token\", responseData.access_token);\r",
+									"//Obtiene el json de respuesta del archivo\r",
+									"if (pm.variables.get(\"jsonTest\") != \"\") {\r",
+									"    csvResponseBody = JSON.parse(pm.variables.get(\"jsonTest\"));\r",
+									"}\r",
+									"//Obtiene el array con las propiedades que se verificarán\r",
+									"propertyList = (pm.variables.get(\"propertyList\")).split(\",\");\r",
+									"\r",
+									"pathlevel = pm.variables.get(\"pathlevel\");\r",
+									"pathLevelIndexByProperties = pm.variables.get(\"pathLevelIndexByProperties\");\r",
+									"\r",
+									"index = pm.variables.get(\"index\");\r",
+									"//contador\r",
+									"try {\r",
+									"    var csvRespondeLength = Object.keys(getValueJSON(pathlevel, csvResponseBody)).length;\r",
+									"\r",
+									"} catch (e) { console.log(\"Contador csvRespondeLength Null\") }\r",
+									"\r",
+									"/******************************\r",
+									"        Funciones\r",
+									" *****************************/\r",
+									"\r",
+									"function getValueJSON(nameKey, objRef) {\r",
+									"\r",
+									"    var arrKeys = nameKey.split('.');\r",
+									"    var objValue = { ...objRef };\r",
+									"    var propName = '';\r",
+									"    var propArrIndex = 0;\r",
+									"\r",
+									"    for (i = 0; i < arrKeys.length; i++) {\r",
+									"\r",
+									"        propName = arrKeys[i];\r",
+									"\r",
+									"        if (propName.indexOf('[') > -1) {\r",
+									"\r",
+									"            propArrIndex = propName.match(/\\[([^)]+)\\]/)[1];\r",
+									"            propName = propName.substring(0, propName.indexOf('['));\r",
+									"            objValue = objValue[propName][propArrIndex];\r",
+									"\r",
+									"        }\r",
+									"\r",
+									"        else {\r",
+									"\r",
+									"            objValue = objValue[propName];\r",
+									"\r",
+									"        }\r",
+									"\r",
+									"    }\r",
+									"\r",
+									"    return objValue;\r",
+									"\r",
+									"}\r",
+									"\r",
+									"//Verifica qué función se debe ejecutar para verificar la información \r",
+									"function selectFunctByIndex() {\r",
+									"    switch (index) {\r",
+									"        case 'byProperties':\r",
+									"            return validateByProperties();\r",
+									"\r",
+									"        case 'byIndex':\r",
+									"            return validateByIndex();\r",
+									"\r",
+									"        case 'indexByProperties':\r",
+									"            return validateIndexByProperties();\r",
+									"\r",
+									"        case 'IndexByPropertiesByIndex':\r",
+									"            return validateIndexByPropertiesByIndex();\r",
+									"\r",
+									"        default:\r",
+									"            return \"Opcion no definida verifique los datos\"\r",
+									"    }\r",
+									"}\r",
+									"\r",
+									"//Función para verificar la data en los niveles que No son arrays\r",
+									"function validateByProperties() {\r",
+									"    console.log(\"validateByProperties\")\r",
+									"    var point = ''\r",
+									"    for (propierty in propertyList) {\r",
+									"        //variables para recorrer la respuesta del request y la respuesta del csv\r",
+									"        if (pathlevel != '') { point = \".\" }\r",
+									"        responBody = getValueJSON(pathlevel + point + propertyList[propierty], responseData);\r",
+									"        console.log(pathlevel + point + propertyList[propierty])\r",
+									"        responCsvBody = getValueJSON(pathlevel + point + propertyList[propierty], csvResponseBody);\r",
+									"        if (responBody == undefined) { pm.collectionVariables.set(\"reporte\", false); return \"***ERROR***La informacion no fue encontrada por favor verifique***ERROR***\" }\r",
+									"\r",
+									"        if (responBody != responCsvBody) {\r",
+									"            report = (\"el valor no coincide: \" + propertyList[propierty] + \" Valor response: \" + responBody + \" valor csv: \" + responCsvBody);\r",
+									"            pm.collectionVariables.set(\"reporte\", false);\r",
+									"            return report;\r",
+									"        }\r",
+									"        else {\r",
+									"            pm.collectionVariables.set(\"reporte\", true);\r",
+									"        }\r",
+									"    }\r",
+									"    return (\"es correcta\");\r",
+									"}\r",
+									"\r",
+									"function validateByIndex() {\r",
+									"    console.log(\"validateByIndex\")\r",
+									"\r",
+									"    var i = 0;\r",
+									"\r",
+									"    do {\r",
+									"        for (propierty in propertyList) {\r",
+									"            //variables para recorrer la respuesta del request y la respuesta del csv\r",
+									"            responBody = getValueJSON(pathlevel + \"[\" + i + \"].\" + propertyList[propierty], responseData);\r",
+									"            responCsvBody = getValueJSON(pathlevel + \"[\" + i + \"].\" + propertyList[propierty], csvResponseBody);\r",
+									"            if (responBody == undefined) { pm.collectionVariables.set(\"reporte\", false); return \"***ERROR***La informacion no fue encontrada por favor verifique***ERROR***\" }\r",
+									"            if (responBody != responCsvBody) {\r",
+									"                report = (\"el valor no coincide: \" + propertyList[propierty] + \" Valor response: \" + responBody + \" valor csv: \" + responCsvBody + \" El empleado con el error es :\" + getValueJSON(pathlevel + \"[\" + i + \"].fullName\", csvResponseBody));\r",
+									"                pm.collectionVariables.set(\"reporte\", false);\r",
+									"                return report;\r",
+									"            }\r",
+									"            else {\r",
+									"                pm.collectionVariables.set(\"reporte\", true);\r",
+									"            }\r",
+									"        }\r",
+									"        i++;\r",
+									"    } while (i < csvRespondeLength)\r",
+									"    return (\"es correcta\");\r",
+									"}\r",
+									"\r",
+									"function validateIndexByProperties() {\r",
+									"    console.log(\"validateIndexByProperties\")\r",
+									"\r",
+									"    var i = 0;\r",
+									"\r",
+									"    do {\r",
+									"        for (propierty in propertyList) {\r",
+									"            //variables para recorrer la respuesta del request y la respuesta del csv\r",
+									"            responBody = getValueJSON(pathlevel + \"[\" + i + \"].\" + pathLevelIndexByProperties + \".\" + propertyList[propierty], responseData);\r",
+									"            responCsvBody = getValueJSON(pathlevel + \"[\" + i + \"].\" + pathLevelIndexByProperties + \".\" + propertyList[propierty], csvResponseBody);\r",
+									"            if (responBody == undefined) { pm.collectionVariables.set(\"reporte\", false); return \"***ERROR***La informacion no fue encontrada por favor verifique***ERROR***\" }\r",
+									"            if (responBody != responCsvBody) {\r",
+									"                report = (\"el valor no coincide: \" + propertyList[propierty] + \" Valor response: \" + responBody + \" valor csv: \" + responCsvBody);\r",
+									"                pm.collectionVariables.set(\"reporte\", false);\r",
+									"                return report;\r",
+									"            }\r",
+									"            else {\r",
+									"                pm.collectionVariables.set(\"reporte\", true);\r",
+									"            }\r",
+									"        }\r",
+									"        i++;\r",
+									"    } while (i < csvRespondeLength)\r",
+									"    return (\"es correcta\");\r",
+									"}\r",
+									"\r",
+									"function validateIndexByPropertiesByIndex() {\r",
+									"    console.log(\"validateIndexByPropertiesByIndex\")\r",
+									"\r",
+									"    var i = 0;\r",
+									"\r",
+									"\r",
+									"    do {\r",
+									"        try {\r",
+									"            var csvRespondeLengthTwo = Object.keys(getValueJSON(pathlevel + \"[\" + i + \"].\" + pathLevelIndexByProperties, csvResponseBody)).length;\r",
+									"        } catch (e) { console.log(\"Contador csvRespondeLengthTwo Null\") }\r",
+									"        console.log(\"paso 1 \" + i)\r",
+									"        for (var j = 0; j < csvRespondeLengthTwo; j++) {\r",
+									"            for (propierty in propertyList) {\r",
+									"                //variables para recorrer la respuesta del request y la respuesta del csv\r",
+									"                responBody = getValueJSON(pathlevel + \"[\" + i + \"].\" + pathLevelIndexByProperties + \"[\" + j + \"].\" + propertyList[propierty], responseData);\r",
+									"                responCsvBody = getValueJSON(pathlevel + \"[\" + i + \"].\" + pathLevelIndexByProperties + \"[\" + j + \"].\" + propertyList[propierty], csvResponseBody);\r",
+									"                \r",
+									"                console.log(\"paso 2 \" + pathlevel + \"[\" + i + \"].\" + pathLevelIndexByProperties + \"[\" + j + \"].\" + propertyList[propierty])\r",
+									"                if (responBody == undefined) { pm.collectionVariables.set(\"reporte\", false); return \"***ERROR***La informacion no fue encontrada por favor verifique***ERROR***\" };\r",
+									"                if (responBody != responCsvBody) {\r",
+									"                    report = (\"el valor no coincide: \" + propertyList[propierty] + \" Valor response: \" + responBody + \" valor csv: \" + responCsvBody + \" El empleado con el error es :\" + getValueJSON(pathlevel + \"[\" + i + \"].fullName\", csvResponseBody));\r",
+									"                    pm.collectionVariables.set(\"reporte\", false);\r",
+									"                    return report;\r",
+									"                }\r",
+									"                else {\r",
+									"                    pm.collectionVariables.set(\"reporte\", true);\r",
+									"                }\r",
+									"            }\r",
+									"\r",
+									"        }\r",
+									"        i++;\r",
+									"    } while (i < csvRespondeLength)\r",
+									"    return (\"es correcta\");\r",
+									"}\r",
+									"\r",
+									"\r",
+									"//Test que verifica el código de estado\r",
+									"pm.test(\"Escenario Get: \" + scenario + \": Código de estado es: \" + testStatus, function () {\r",
+									"    pm.response.to.have.status(testStatus);\r",
+									"});\r",
+									"\r",
+									"//Test para verificar el tiempo de respuesta\r",
+									"pm.test(\"Escenario Get: \" + scenario + \": Tiempo de respuesta es menor a 4500\", function () {\r",
+									"    pm.expect(pm.response.responseTime).to.be.below(4500);\r",
+									"});\r",
+									"\r",
+									"/*if (testStatus == 200) {\r",
+									"    //Test para velificar la información\r",
+									"    pm.test(\"Escenario Get: \" + scenario + \": Verificación de la información \" + selectFunctByIndex(), function () {\r",
+									"        pm.expect(pm.collectionVariables.get(\"reporte\")).to.eql(true);\r",
+									"    });\r",
+									"}*/"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": " {\r\n  \"userName\": \"{{userName}}\",\r\n  \"password\": \"{{password}}\",\r\n  \"companyKey\": \"{{companyKey}}\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{urltoken}}/api/token/GetToken",
+							"host": [
+								"{{urltoken}}"
+							],
+							"path": [
+								"api",
+								"token",
+								"GetToken"
+							]
+						},
+						"description": "Token QA E-doccs"
+					},
+					"response": []
+				}
+			],
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"id": "d88233ca-afbd-4113-ab01-9cb078e4affd",
+						"type": "text/javascript",
+						"exec": [
+							""
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"id": "d68df033-2dd2-4526-97dc-4bc44b2899d9",
+						"type": "text/javascript",
+						"exec": [
+							""
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {}
+		},
+		{
+			"name": "SiigoCloud",
+			"item": [
+				{
+					"name": "SaveRequest",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"id": "9a4bed3c-0094-445a-9035-43e791d0bdd3",
+								"exec": [
+									"pm.collectionVariables.set(\"urlelectronicbillingservice\", \"https://qaesiigov3apielectronicbillingservice.azurewebsites.net\");\r",
+									"var jsonSource = {\"EntrySetting\":null,\"SendToEsiigo\":false,\"ExternalElectronicSend\":false,\"EntryType\":{\"IsOnlinePayment\":null,\"IsRoundNumber\":null,\"IsDiscountPercentaje\":null,\"IsDiscountValue\":null,\"BaseAIU\":null,\"InternalDescription\":null,\"AllowRetVAT\":null,\"AllowRetICA\":null,\"AllowDecimals\":null,\"AllowSalesBySalesman\":null,\"AllowSalesByAccount\":null,\"UseCostCenter\":null,\"IsShowResolutionDIAN\":null,\"ACAccountCode\":0,\"EnableTwoTaxesOnSave\":null,\"SelfWithholdingLowerLimit\":null,\"ElectronicInvoiceType\":1,\"DIANPrefix\":null,\"CLDocumentTypeCode\":null,\"ERPDocumentTypeID\":63985,\"Name\":null,\"Class\":\"FV\",\"Code\":\"2\",\"IsAutomaticEnum\":null,\"TemplateName\":null},\"Entry\":{\"AccountCode\":466105,\"ContactCode\":248847,\"SalesmanCode\":4788,\"TotalConsumptionValue\":12000,\"TaxDiscTotalValue\":1192795.21,\"VATTotalValue\":2333184.83,\"TotalGrossValue\":21071341.98,\"TotalBaseAIU\":879920.17,\"RetICATotalCode\":32893,\"RetICATotalValue\":12142.9,\"RetICATotaPercentage\":13.8,\"RetVATTotalCode\":32899,\"RetVATTotalValue\":349977.72,\"RetVATTotalPercentage\":15,\"TotalDiscountValue\":872140.26,\"TotalDiscountPercentage\":null,\"Header\":null,\"CommercialConditions\":null,\"ACEntryCode\":null,\"CostCenterCode\":null,\"IsAllowDecimals\":true,\"ApplyForAllDay\":null,\"DianConceptCode\":null,\"TerminalPOSGUID\":null,\"CUFE\":null,\"CreatedAsSupplierByItem\":null,\"ExternalDocumentNumber\":null,\"Comments\":null,\"ExternalPrefix\":null,\"ExternalConsecutive\":null,\"TaxIncluded\":null,\"IsDiscountPercent\":null,\"RelatedInvoiceConsecutive\":0,\"RelatedInvoiceDate\":null,\"RelatedInvoiceCUFE\":null,\"RelatedInvoicePrefix\":null,\"RelatedInvoiceVersion\":0,\"CreatedAsSalesBySalesman\":null,\"CreatedAsSalesByAccount\":true,\"TotalAIUAdministration\":null,\"TotalAIUUnforeseen\":null,\"TotalAIUUtility\":null,\"AssociateSource\":null,\"SelfWithholdingTaxTotalCode\":null,\"SelfWithholdingTaxTotalPercentage\":null,\"SelfWithholdingTaxTotalValue\":null,\"ForSelfWithholdingTaxTotalValue\":null,\"ForTotalAIUAdministration\":null,\"ForTotalAIUUnforeseen\":null,\"ForTotalAIUUtility\":null,\"TotalChargesAccrued\":null,\"TotalDiscountsAccrued\":null,\"TaxExclusiveAmount\":12279920.17,\"TaxInclusiveAmount\":23416526.81,\"ChargeTotalAmount\":0,\"ListTotalTaxes\":[{\"TaxCode\":32885,\"TaxName\":\"IVA 19%\",\"TaxType\":1,\"TaxPercentage\":19,\"TaxTotalValue\":2333184.83,\"TaxTotalBase\":12279920.172},{\"TaxCode\":32901,\"TaxName\":\"Impoconsumo por valor\",\"TaxType\":2,\"TaxPercentage\":0,\"TaxTotalValue\":12000,\"TaxTotalBase\":11400000},{\"TaxCode\":32888,\"TaxName\":\"Retefuente 10%\",\"TaxType\":6,\"TaxPercentage\":10,\"TaxTotalValue\":1140000,\"TaxTotalBase\":11400000},{\"TaxCode\":32889,\"TaxName\":\"Retefuente 6%\",\"TaxType\":6,\"TaxPercentage\":6,\"TaxTotalValue\":52795.21,\"TaxTotalBase\":879920.172},{\"TaxCode\":32893,\"TaxName\":\"ReteICA 13.8\",\"TaxType\":7,\"TaxPercentage\":1.38,\"TaxTotalValue\":12142.9,\"TaxTotalBase\":879920.17},{\"TaxCode\":32899,\"TaxName\":\"ReteIVA 15%\",\"TaxType\":5,\"TaxPercentage\":15,\"TaxTotalValue\":349977.72,\"TaxTotalBase\":2333184.83}],\"eSiigoMassiveSend\":null,\"ExportData\":null,\"ACEntryID\":1252032,\"DocNumber\":991001106,\"DocName\":\"FV-2-991001106\",\"Observations\":\"Factura de venta manual para prueba inicial Postman\",\"DocDate\":\"202008111220\",\"TotalValue\":20989470.72,\"ForeignMoneyCode\":null,\"MoneyCode\":null,\"ExchangeValue\":null,\"ExchangePersonalized\":null,\"AttachmentsFSItemsGUID\":null,\"SourceType\":0,\"IsClosePeriod\":null,\"ForVATTotalValue\":null,\"ForRetVATTotalValue\":null,\"ForRetICATotalValue\":null,\"ForTaxDiscTotalValue\":null,\"ForTotalConsumptionValue\":null,\"ForTotalGrossValue\":null,\"ForTotalValue\":null,\"ForTotalDiscountValue\":null,\"ForTotalBaseAIU\":null,\"OrderReference\":\"Pref||123456\"},\"Items\":[{\"ProductCode\":234358,\"Description\":\"2 BOT. A.A. SIN AZUCAR 750 MAS CD MARTIN ELIAS\",\"LongDescription\":\"2 BOT. A.A. SIN AZUCAR 750 MAS CD MARTIN ELIAS\",\"DC\":-1,\"CostCenterCode\":null,\"WarehouseCode\":null,\"ACAccountCode\":null,\"ACPaymentMean\":null,\"AccountCode\":466105,\"ItemAccountCode\":466105,\"ConceptCode\":null,\"DueDate\":\"20200811\",\"Quantity\":12,\"Value\":12438000,\"TaxAddName\":\"IVA 19%\",\"TaxAddPercentage\":19,\"TaxAddValue\":2166000,\"TaxDiscName\":\"Retefuente 10%\",\"TaxDiscPercentage\":10,\"TaxDiscValue\":1140000,\"TaxAddCode\":32885,\"TaxDiscCode\":32888,\"ConsumptionValue\":null,\"FixedAssetCode\":null,\"DuePrefix\":null,\"DueConsecutive\":null,\"DueQuote\":null,\"GrossValue\":12000000,\"UnitValue\":1000000,\"UnitRealValue\":1000000,\"DiscountPercentage\":5,\"DiscountValue\":600000,\"BaseAIU\":11400000,\"ProductSubType\":0,\"SalesmanCode\":4788,\"TaxAdd2Code\":32901,\"TaxAdd2Value\":12000,\"TaxAdd2Percentage\":0,\"TaxAdd2Name\":\"Impoconsumo por valor\",\"TaxAddType\":1,\"TaxAdd2Type\":2,\"TaxDiscType\":0,\"PaymentType\":0,\"ForUnitValue\":null,\"ForUnitRealValue\":null,\"ForDiscountValue\":null,\"ForValue\":null,\"ForBaseAIU\":null,\"ForTaxAddValue\":null,\"ForTaxDiscValue\":null,\"ForTaxAdd2Value\":null,\"ForGrossValue\":null,\"ForConsumptionValue\":null,\"ForValueWithChargeTaxes\":null,\"DiscountReason\":null,\"ProductUnitMeasurement\":\"CLT\",\"AIUContractConcept\":\"\",\"ItemAccount\":{\"IdentificationType\":31,\"Identification\":\"899999107\",\"CheckDigit\":\"9\"},\"Tariff\":null,\"Model\":null,\"Brand\":null,\"IsVATExclusionCovered\":false,\"Order\":1,\"EntryItemType\":0},{\"ProductCode\":234359,\"Description\":\"A. REAL 1493 OFERTA 2X3\",\"LongDescription\":\"A. REAL 1493 OFERTA 2X3\",\"DC\":-1,\"CostCenterCode\":null,\"WarehouseCode\":1346,\"ACAccountCode\":null,\"ACPaymentMean\":null,\"AccountCode\":466105,\"ItemAccountCode\":466105,\"ConceptCode\":null,\"DueDate\":\"20200811\",\"Quantity\":11,\"Value\":8913591.34,\"TaxAddName\":\"IVA 19%\",\"TaxAddPercentage\":19,\"TaxAddValue\":167184.83,\"TaxDiscName\":\"Retefuente 6%\",\"TaxDiscPercentage\":6,\"TaxDiscValue\":52795.21,\"TaxAddCode\":32885,\"TaxDiscCode\":32889,\"ConsumptionValue\":null,\"FixedAssetCode\":null,\"DuePrefix\":null,\"DueConsecutive\":null,\"DueQuote\":null,\"GrossValue\":9071341.98,\"UnitValue\":824667.45285,\"UnitRealValue\":824667.45285,\"DiscountPercentage\":3,\"DiscountValue\":272140.26,\"BaseAIU\":879920.172,\"ProductSubType\":0,\"SalesmanCode\":4788,\"TaxAdd2Code\":null,\"TaxAdd2Value\":null,\"TaxAdd2Percentage\":0,\"TaxAdd2Name\":\"\",\"TaxAddType\":1,\"TaxAdd2Type\":0,\"TaxDiscType\":0,\"PaymentType\":0,\"ForUnitValue\":null,\"ForUnitRealValue\":null,\"ForDiscountValue\":null,\"ForValue\":null,\"ForBaseAIU\":null,\"ForTaxAddValue\":null,\"ForTaxDiscValue\":null,\"ForTaxAdd2Value\":null,\"ForGrossValue\":null,\"ForConsumptionValue\":null,\"ForValueWithChargeTaxes\":null,\"DiscountReason\":null,\"ProductUnitMeasurement\":\"94\",\"AIUContractConcept\":\"Contrato de Arrendamiento\",\"ItemAccount\":{\"IdentificationType\":31,\"Identification\":\"899999107\",\"CheckDigit\":\"9\"},\"Tariff\":null,\"Model\":null,\"Brand\":null,\"IsVATExclusionCovered\":false,\"Order\":2,\"EntryItemType\":0},{\"ProductCode\":null,\"Description\":\"ReteICA 13.8\",\"LongDescription\":null,\"DC\":1,\"CostCenterCode\":null,\"WarehouseCode\":null,\"ACAccountCode\":null,\"ACPaymentMean\":null,\"AccountCode\":466105,\"ItemAccountCode\":null,\"ConceptCode\":null,\"DueDate\":null,\"Quantity\":null,\"Value\":12142.9,\"TaxAddName\":\"ReteICA 13.8\",\"TaxAddPercentage\":13.8,\"TaxAddValue\":12142.9,\"TaxDiscName\":null,\"TaxDiscPercentage\":null,\"TaxDiscValue\":null,\"TaxAddCode\":32893,\"TaxDiscCode\":null,\"ConsumptionValue\":null,\"FixedAssetCode\":null,\"DuePrefix\":null,\"DueConsecutive\":null,\"DueQuote\":null,\"GrossValue\":879920.17,\"UnitValue\":null,\"UnitRealValue\":null,\"DiscountPercentage\":null,\"DiscountValue\":null,\"BaseAIU\":879920.17,\"ProductSubType\":null,\"SalesmanCode\":null,\"TaxAdd2Code\":null,\"TaxAdd2Value\":null,\"TaxAdd2Percentage\":null,\"TaxAdd2Name\":null,\"TaxAddType\":0,\"TaxAdd2Type\":0,\"TaxDiscType\":0,\"PaymentType\":0,\"ForUnitValue\":null,\"ForUnitRealValue\":null,\"ForDiscountValue\":null,\"ForValue\":null,\"ForBaseAIU\":null,\"ForTaxAddValue\":null,\"ForTaxDiscValue\":null,\"ForTaxAdd2Value\":null,\"ForGrossValue\":null,\"ForConsumptionValue\":null,\"ForValueWithChargeTaxes\":null,\"DiscountReason\":null,\"ProductUnitMeasurement\":\"ZZ\",\"AIUContractConcept\":\"\",\"ItemAccount\":null,\"Tariff\":null,\"Model\":null,\"Brand\":null,\"IsVATExclusionCovered\":false,\"Order\":3,\"EntryItemType\":1},{\"ProductCode\":null,\"Description\":\"ReteIVA 15%\",\"LongDescription\":null,\"DC\":1,\"CostCenterCode\":null,\"WarehouseCode\":null,\"ACAccountCode\":null,\"ACPaymentMean\":null,\"AccountCode\":466105,\"ItemAccountCode\":null,\"ConceptCode\":null,\"DueDate\":null,\"Quantity\":null,\"Value\":349977.72,\"TaxAddName\":\"ReteIVA 15%\",\"TaxAddPercentage\":15,\"TaxAddValue\":349977.72,\"TaxDiscName\":null,\"TaxDiscPercentage\":null,\"TaxDiscValue\":null,\"TaxAddCode\":32899,\"TaxDiscCode\":null,\"ConsumptionValue\":null,\"FixedAssetCode\":null,\"DuePrefix\":null,\"DueConsecutive\":null,\"DueQuote\":null,\"GrossValue\":2333184.83,\"UnitValue\":null,\"UnitRealValue\":null,\"DiscountPercentage\":null,\"DiscountValue\":null,\"BaseAIU\":2333184.83,\"ProductSubType\":null,\"SalesmanCode\":null,\"TaxAdd2Code\":null,\"TaxAdd2Value\":null,\"TaxAdd2Percentage\":null,\"TaxAdd2Name\":null,\"TaxAddType\":0,\"TaxAdd2Type\":0,\"TaxDiscType\":0,\"PaymentType\":0,\"ForUnitValue\":null,\"ForUnitRealValue\":null,\"ForDiscountValue\":null,\"ForValue\":null,\"ForBaseAIU\":null,\"ForTaxAddValue\":null,\"ForTaxDiscValue\":null,\"ForTaxAdd2Value\":null,\"ForGrossValue\":null,\"ForConsumptionValue\":null,\"ForValueWithChargeTaxes\":null,\"DiscountReason\":null,\"ProductUnitMeasurement\":\"ZZ\",\"AIUContractConcept\":\"\",\"ItemAccount\":null,\"Tariff\":null,\"Model\":null,\"Brand\":null,\"IsVATExclusionCovered\":false,\"Order\":4,\"EntryItemType\":1},{\"ProductCode\":null,\"Description\":\"Ars Convida\",\"LongDescription\":null,\"DC\":1,\"CostCenterCode\":null,\"WarehouseCode\":null,\"ACAccountCode\":1399059,\"ACPaymentMean\":13286,\"AccountCode\":466105,\"ItemAccountCode\":null,\"ConceptCode\":null,\"DueDate\":null,\"Quantity\":null,\"Value\":10000000,\"TaxAddName\":null,\"TaxAddPercentage\":null,\"TaxAddValue\":null,\"TaxDiscName\":null,\"TaxDiscPercentage\":null,\"TaxDiscValue\":null,\"TaxAddCode\":null,\"TaxDiscCode\":null,\"ConsumptionValue\":null,\"FixedAssetCode\":null,\"DuePrefix\":null,\"DueConsecutive\":null,\"DueQuote\":null,\"GrossValue\":null,\"UnitValue\":null,\"UnitRealValue\":null,\"DiscountPercentage\":null,\"DiscountValue\":null,\"BaseAIU\":0,\"ProductSubType\":null,\"SalesmanCode\":null,\"TaxAdd2Code\":null,\"TaxAdd2Value\":null,\"TaxAdd2Percentage\":null,\"TaxAdd2Name\":null,\"TaxAddType\":0,\"TaxAdd2Type\":0,\"TaxDiscType\":0,\"PaymentType\":10,\"ForUnitValue\":null,\"ForUnitRealValue\":null,\"ForDiscountValue\":null,\"ForValue\":null,\"ForBaseAIU\":null,\"ForTaxAddValue\":null,\"ForTaxDiscValue\":null,\"ForTaxAdd2Value\":null,\"ForGrossValue\":null,\"ForConsumptionValue\":null,\"ForValueWithChargeTaxes\":null,\"DiscountReason\":null,\"ProductUnitMeasurement\":\"ZZ\",\"AIUContractConcept\":\"\",\"ItemAccount\":null,\"Tariff\":null,\"Model\":null,\"Brand\":null,\"IsVATExclusionCovered\":false,\"Order\":5,\"EntryItemType\":3},{\"ProductCode\":null,\"Description\":\"Ars Convida\",\"LongDescription\":null,\"DC\":1,\"CostCenterCode\":null,\"WarehouseCode\":null,\"ACAccountCode\":1399094,\"ACPaymentMean\":13287,\"AccountCode\":466105,\"ItemAccountCode\":null,\"ConceptCode\":null,\"DueDate\":\"20200826\",\"Quantity\":null,\"Value\":10989470.72,\"TaxAddName\":null,\"TaxAddPercentage\":null,\"TaxAddValue\":null,\"TaxDiscName\":null,\"TaxDiscPercentage\":null,\"TaxDiscValue\":null,\"TaxAddCode\":null,\"TaxDiscCode\":null,\"ConsumptionValue\":null,\"FixedAssetCode\":null,\"DuePrefix\":\"FV-2\",\"DueConsecutive\":991001106,\"DueQuote\":1,\"GrossValue\":null,\"UnitValue\":null,\"UnitRealValue\":null,\"DiscountPercentage\":null,\"DiscountValue\":null,\"BaseAIU\":0,\"ProductSubType\":null,\"SalesmanCode\":null,\"TaxAdd2Code\":null,\"TaxAdd2Value\":null,\"TaxAdd2Percentage\":null,\"TaxAdd2Name\":null,\"TaxAddType\":0,\"TaxAdd2Type\":0,\"TaxDiscType\":0,\"PaymentType\":78,\"ForUnitValue\":null,\"ForUnitRealValue\":null,\"ForDiscountValue\":null,\"ForValue\":null,\"ForBaseAIU\":null,\"ForTaxAddValue\":null,\"ForTaxDiscValue\":null,\"ForTaxAdd2Value\":null,\"ForGrossValue\":null,\"ForConsumptionValue\":null,\"ForValueWithChargeTaxes\":null,\"DiscountReason\":null,\"ProductUnitMeasurement\":\"ZZ\",\"AIUContractConcept\":\"\",\"ItemAccount\":null,\"Tariff\":null,\"Model\":null,\"Brand\":null,\"IsVATExclusionCovered\":false,\"Order\":6,\"EntryItemType\":3}],\"Nit\":\"830048145\",\"ThirdParty\":{\"AdditionalAccountID\":1,\"IdentificationType\":31,\"PartyIdentification\":\"899999107\",\"PartyName\":\"\",\"PhysicalLocation\":{\"Department\":\"Cundinamarca\",\"DepartmentCode\":\"25\",\"CitySubdivisionName\":null,\"CityName\":\"Bosa\",\"AddressLine\":\"Carrera 58 No. 9-97\",\"CountryCode\":\"Co\",\"CityId\":354},\"TaxLevelCode\":49,\"TaxScheme\":\"\",\"RegistrationName\":\"Ars Convida\",\"PersonFirstName\":\"\",\"PersonLastNames\":\"\",\"PersonMiddleName\":\"\",\"FullName\":\" \",\"Email\":\"luis.romero@siigo.com\",\"Phone\":\"2556699\",\"ContactName\":\"Luis Romero\",\"ContactEmail\":\"luis.romero@siigo.com\",\"TradeName\":null,\"PostalCode\":\"0\",\"PartyTaxCodes\":null,\"FiscalResponsibilities\":\"R-99-PN\",\"CheckDigit\":\"9\",\"BranchOffice\":0},\"CompanyInfo\":{\"AdditionalAccountID\":1,\"IdentificationType\":31,\"PartyIdentification\":\"830048145\",\"PartyName\":\"SIIGO TECH MF\",\"PhysicalLocation\":{\"Department\":\"Bogotá D.C\",\"DepartmentCode\":\"11\",\"CitySubdivisionName\":null,\"CityName\":\"Bogotá\",\"AddressLine\":\"Carrera 10 No 85 - 20\",\"CountryCode\":\"Co\",\"CityId\":1},\"TaxLevelCode\":48,\"TaxScheme\":\"\",\"RegistrationName\":\"SIIGO TECH MF\",\"PersonFirstName\":\"SIIGO\",\"PersonLastNames\":\"MF\",\"PersonMiddleName\":\"TECH\",\"FullName\":\"SIIGO TECH MF\",\"Email\":\"paola.cely@siigo.com\",\"Phone\":\"|6337150|\",\"ContactName\":\"SIIGO TECH MF\",\"ContactEmail\":null,\"TradeName\":\"SIIGO TECH MF\",\"PostalCode\":\"110531\",\"PartyTaxCodes\":\"01;06;07\",\"FiscalResponsibilities\":\"O-13\",\"CheckDigit\":null,\"BranchOffice\":0},\"IsEntryTestMode\":false,\"DianResModel\":{\"InvoiceAuthorization\":\"18760000001\",\"ResolutionDate\":\"0001-01-01T00:00:00\",\"ResolutionEndDate\":\"0001-01-01T00:00:00\",\"Prefix\":\"SETP\",\"numberStart\":0,\"numberEnd\":0,\"countryCode\":null,\"ProviderID\":null,\"SoftwareID\":null,\"SoftwareSecurityCode\":null,\"DianResolutionID\":0,\"TechnicalKey\":null,\"EntryType\":0,\"TestID\":null},\"IsEmergencyInvoice\":null,\"ModelType\":0,\"AttachFiles\":null}\r",
+									"pm.collectionVariables.set(\"jsonSource\" , jsonSource);\r",
+									"pm.collectionVariables.set(\"Origin\", \"1\");\r",
+									"pm.collectionVariables.set(\"token\", 'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsIng1dCI6ImEzck1VZ01Gdjl0UGNsTGE2eUYzekFrZnF1RSIsImtpZCI6ImEzck1VZ01Gdjl0UGNsTGE2eUYzekFrZnF1RSJ9.eyJpc3MiOiJodHRwOi8vNDAuNzkuNjYuMTQwOjUwMDA5IiwiYXVkIjoiaHR0cDovLzQwLjc5LjY2LjE0MDo1MDAwOS9yZXNvdXJjZXMiLCJleHAiOjE1OTc4NzM0ODAsIm5iZiI6MTU5Nzg2NjI4MCwiY2xpZW50X2lkIjoiZVNpaWdvV2ViQVBJIiwic2NvcGUiOlsib2ZmbGluZV9hY2Nlc3MiLCJXZWJBcGkiXSwic3ViIjoiMjA5NDgiLCJhdXRoX3RpbWUiOjE1OTc4NjYyODAsImlkcCI6Imlkc3J2IiwibWFpbF9zaWlnbyI6InNpaWdvQHRlY2htZi5jb20iLCJjbG91ZF90ZW5hbnRfY29tcGFueV9rZXkiOiJTSUlHT19URUNIX01GXzAxXzAwIiwicm9sZSI6ImFkbWluIiwiY2xvdWRfdGVuYW50X2lkIjoiNTM3NzJiM2MtOWUwYi00MDIwLTk4MTQtNDE1YzMyMzRkYzY2IiwiaXNfc3VwZXJfYWRtaW4iOiJGYWxzZSIsImNsb3VkX3RlbmFudF9wcm9kdWN0dHlwZSI6IjEiLCJpc19zZW5kX2FjdGl2ZSI6IjEiLCJhbXIiOlsicGFzc3dvcmQiXX0.EBHf2sOCfX8hYnbM3SZQKGGw7FGj-qoS7DA5_opxID1XPqDGLrlicbnsDjbuXpSG1_YPuhrmIX4p8aUS5l2HM4IQbb7iHM354W-BnIvhVZ4RKoKc2d-zqfIv67DpHQc0yGYmyRqsGXK_w-w93Gha2tuHg2Ddxo9WWa69JrSw6fe5MrHfCO20mW60ZuSzEo1FMzwGYJmspoYM_pVQoM2DAF0FDwwEOlsCQbYPVElmiqaKha1Yu3Jj-uzG9U4m27RHJj82p8OOlsZPzVIagYAjy3lTXTusSIX5S7La9tODT1QU0R55OqZsBV1T-qIE2R0nk4aZ5123eLjwN2zLJsF6nQ');\r",
+									"pm.collectionVariables.set(\"CloudTenantID\", \"53772b3c-9e0b-4020-9814-415c3234dc66\");"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"id": "c42afeba-5511-439b-b98b-bccced5e56d9",
+								"exec": [
+									"pm.test(\"Response time is less than 500ms\", function () {pm.expect(pm.response.responseTime).to.be.below(500);});\r",
+									"pm.test(\"Status code is 200\", function () {pm.response.to.have.status(200);});\r",
+									"saveRequestBody = JSON.parse(responseBody)\r",
+									"console.log(\"respuesta saveRequestBody \" + saveRequestBody)\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"Source\": '{{jsonSource}}',\r\n  \"Origin\": {{Origin}},\r\n  \"Token\": \"{{token}}\",\r\n  \"CloudTenantID\": \"{{CloudTenantID}}\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{urlelectronicbillingservice}}/api/SiigoCloud/SaveRequest",
+							"host": [
+								"{{urlelectronicbillingservice}}"
+							],
+							"path": [
+								"api",
+								"SiigoCloud",
+								"SaveRequest"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"protocolProfileBehavior": {}
+		},
+		{
+			"name": "Transaction",
+			"item": [
+				{
+					"name": "GetByTransactionResult",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"id": "32f91a16-51c8-4fd3-8a2e-362345638f18",
+								"exec": [
+									"pm.collectionVariables.set(\"urlelectronicbillingservice\", \"https://qaesiigov3apielectronicbillingservice.azurewebsites.net\");\r",
+									"var jsonTest = {\"transactionID\":\"a6ac03cd-2d03-4492-998e-733f0feb42c2\",\"message\":\"{\\\"Source\\\":\\\"{\\\\\\\"EntrySetting\\\\\\\":null,\\\\\\\"SendToEsiigo\\\\\\\":false,\\\\\\\"ExternalElectronicSend\\\\\\\":false,\\\\\\\"EntryType\\\\\\\":{\\\\\\\"IsOnlinePayment\\\\\\\":null,\\\\\\\"IsRoundNumber\\\\\\\":null,\\\\\\\"IsDiscountPercentaje\\\\\\\":null,\\\\\\\"IsDiscountValue\\\\\\\":null,\\\\\\\"BaseAIU\\\\\\\":null,\\\\\\\"InternalDescription\\\\\\\":null,\\\\\\\"AllowRetVAT\\\\\\\":null,\\\\\\\"AllowRetICA\\\\\\\":null,\\\\\\\"AllowDecimals\\\\\\\":null,\\\\\\\"AllowSalesBySalesman\\\\\\\":null,\\\\\\\"AllowSalesByAccount\\\\\\\":null,\\\\\\\"UseCostCenter\\\\\\\":null,\\\\\\\"IsShowResolutionDIAN\\\\\\\":null,\\\\\\\"ACAccountCode\\\\\\\":0,\\\\\\\"EnableTwoTaxesOnSave\\\\\\\":null,\\\\\\\"SelfWithholdingLowerLimit\\\\\\\":null,\\\\\\\"ElectronicInvoiceType\\\\\\\":1,\\\\\\\"DIANPrefix\\\\\\\":null,\\\\\\\"CLDocumentTypeCode\\\\\\\":null,\\\\\\\"ERPDocumentTypeID\\\\\\\":63985,\\\\\\\"Name\\\\\\\":null,\\\\\\\"Class\\\\\\\":\\\\\\\"FV\\\\\\\",\\\\\\\"Code\\\\\\\":\\\\\\\"2\\\\\\\",\\\\\\\"IsAutomaticEnum\\\\\\\":null,\\\\\\\"TemplateName\\\\\\\":null},\\\\\\\"Entry\\\\\\\":{\\\\\\\"AccountCode\\\\\\\":466105,\\\\\\\"ContactCode\\\\\\\":248847,\\\\\\\"SalesmanCode\\\\\\\":4788,\\\\\\\"TotalConsumptionValue\\\\\\\":12000,\\\\\\\"TaxDiscTotalValue\\\\\\\":1192795.21,\\\\\\\"VATTotalValue\\\\\\\":2333184.83,\\\\\\\"TotalGrossValue\\\\\\\":21071341.98,\\\\\\\"TotalBaseAIU\\\\\\\":879920.17,\\\\\\\"RetICATotalCode\\\\\\\":32893,\\\\\\\"RetICATotalValue\\\\\\\":12142.9,\\\\\\\"RetICATotaPercentage\\\\\\\":13.8,\\\\\\\"RetVATTotalCode\\\\\\\":32899,\\\\\\\"RetVATTotalValue\\\\\\\":349977.72,\\\\\\\"RetVATTotalPercentage\\\\\\\":15,\\\\\\\"TotalDiscountValue\\\\\\\":872140.26,\\\\\\\"TotalDiscountPercentage\\\\\\\":null,\\\\\\\"Header\\\\\\\":null,\\\\\\\"CommercialConditions\\\\\\\":null,\\\\\\\"ACEntryCode\\\\\\\":null,\\\\\\\"CostCenterCode\\\\\\\":null,\\\\\\\"IsAllowDecimals\\\\\\\":true,\\\\\\\"ApplyForAllDay\\\\\\\":null,\\\\\\\"DianConceptCode\\\\\\\":null,\\\\\\\"TerminalPOSGUID\\\\\\\":null,\\\\\\\"CUFE\\\\\\\":null,\\\\\\\"CreatedAsSupplierByItem\\\\\\\":null,\\\\\\\"ExternalDocumentNumber\\\\\\\":null,\\\\\\\"Comments\\\\\\\":null,\\\\\\\"ExternalPrefix\\\\\\\":null,\\\\\\\"ExternalConsecutive\\\\\\\":null,\\\\\\\"TaxIncluded\\\\\\\":null,\\\\\\\"IsDiscountPercent\\\\\\\":null,\\\\\\\"RelatedInvoiceConsecutive\\\\\\\":0,\\\\\\\"RelatedInvoiceDate\\\\\\\":null,\\\\\\\"RelatedInvoiceCUFE\\\\\\\":null,\\\\\\\"RelatedInvoicePrefix\\\\\\\":null,\\\\\\\"RelatedInvoiceVersion\\\\\\\":0,\\\\\\\"CreatedAsSalesBySalesman\\\\\\\":null,\\\\\\\"CreatedAsSalesByAccount\\\\\\\":true,\\\\\\\"TotalAIUAdministration\\\\\\\":null,\\\\\\\"TotalAIUUnforeseen\\\\\\\":null,\\\\\\\"TotalAIUUtility\\\\\\\":null,\\\\\\\"AssociateSource\\\\\\\":null,\\\\\\\"SelfWithholdingTaxTotalCode\\\\\\\":null,\\\\\\\"SelfWithholdingTaxTotalPercentage\\\\\\\":null,\\\\\\\"SelfWithholdingTaxTotalValue\\\\\\\":null,\\\\\\\"ForSelfWithholdingTaxTotalValue\\\\\\\":null,\\\\\\\"ForTotalAIUAdministration\\\\\\\":null,\\\\\\\"ForTotalAIUUnforeseen\\\\\\\":null,\\\\\\\"ForTotalAIUUtility\\\\\\\":null,\\\\\\\"TotalChargesAccrued\\\\\\\":null,\\\\\\\"TotalDiscountsAccrued\\\\\\\":null,\\\\\\\"TaxExclusiveAmount\\\\\\\":12279920.17,\\\\\\\"TaxInclusiveAmount\\\\\\\":23416526.81,\\\\\\\"ChargeTotalAmount\\\\\\\":0,\\\\\\\"ListTotalTaxes\\\\\\\":[{\\\\\\\"TaxCode\\\\\\\":32885,\\\\\\\"TaxName\\\\\\\":\\\\\\\"IVA 19%\\\\\\\",\\\\\\\"TaxType\\\\\\\":1,\\\\\\\"TaxPercentage\\\\\\\":19,\\\\\\\"TaxTotalValue\\\\\\\":2333184.83,\\\\\\\"TaxTotalBase\\\\\\\":12279920.172},{\\\\\\\"TaxCode\\\\\\\":32901,\\\\\\\"TaxName\\\\\\\":\\\\\\\"Impoconsumo por valor\\\\\\\",\\\\\\\"TaxType\\\\\\\":2,\\\\\\\"TaxPercentage\\\\\\\":0,\\\\\\\"TaxTotalValue\\\\\\\":12000,\\\\\\\"TaxTotalBase\\\\\\\":11400000},{\\\\\\\"TaxCode\\\\\\\":32888,\\\\\\\"TaxName\\\\\\\":\\\\\\\"Retefuente 10%\\\\\\\",\\\\\\\"TaxType\\\\\\\":6,\\\\\\\"TaxPercentage\\\\\\\":10,\\\\\\\"TaxTotalValue\\\\\\\":1140000,\\\\\\\"TaxTotalBase\\\\\\\":11400000},{\\\\\\\"TaxCode\\\\\\\":32889,\\\\\\\"TaxName\\\\\\\":\\\\\\\"Retefuente 6%\\\\\\\",\\\\\\\"TaxType\\\\\\\":6,\\\\\\\"TaxPercentage\\\\\\\":6,\\\\\\\"TaxTotalValue\\\\\\\":52795.21,\\\\\\\"TaxTotalBase\\\\\\\":879920.172},{\\\\\\\"TaxCode\\\\\\\":32893,\\\\\\\"TaxName\\\\\\\":\\\\\\\"ReteICA 13.8\\\\\\\",\\\\\\\"TaxType\\\\\\\":7,\\\\\\\"TaxPercentage\\\\\\\":1.38,\\\\\\\"TaxTotalValue\\\\\\\":12142.9,\\\\\\\"TaxTotalBase\\\\\\\":879920.17},{\\\\\\\"TaxCode\\\\\\\":32899,\\\\\\\"TaxName\\\\\\\":\\\\\\\"ReteIVA 15%\\\\\\\",\\\\\\\"TaxType\\\\\\\":5,\\\\\\\"TaxPercentage\\\\\\\":15,\\\\\\\"TaxTotalValue\\\\\\\":349977.72,\\\\\\\"TaxTotalBase\\\\\\\":2333184.83}],\\\\\\\"eSiigoMassiveSend\\\\\\\":null,\\\\\\\"ExportData\\\\\\\":null,\\\\\\\"ACEntryID\\\\\\\":1252032,\\\\\\\"DocNumber\\\\\\\":991001106,\\\\\\\"DocName\\\\\\\":\\\\\\\"FV-2-991001106\\\\\\\",\\\\\\\"Observations\\\\\\\":\\\\\\\"Factura de venta manual para prueba inicial Postman\\\\\\\",\\\\\\\"DocDate\\\\\\\":\\\\\\\"202008111220\\\\\\\",\\\\\\\"TotalValue\\\\\\\":20989470.72,\\\\\\\"ForeignMoneyCode\\\\\\\":null,\\\\\\\"MoneyCode\\\\\\\":null,\\\\\\\"ExchangeValue\\\\\\\":null,\\\\\\\"ExchangePersonalized\\\\\\\":null,\\\\\\\"AttachmentsFSItemsGUID\\\\\\\":null,\\\\\\\"SourceType\\\\\\\":0,\\\\\\\"IsClosePeriod\\\\\\\":null,\\\\\\\"ForVATTotalValue\\\\\\\":null,\\\\\\\"ForRetVATTotalValue\\\\\\\":null,\\\\\\\"ForRetICATotalValue\\\\\\\":null,\\\\\\\"ForTaxDiscTotalValue\\\\\\\":null,\\\\\\\"ForTotalConsumptionValue\\\\\\\":null,\\\\\\\"ForTotalGrossValue\\\\\\\":null,\\\\\\\"ForTotalValue\\\\\\\":null,\\\\\\\"ForTotalDiscountValue\\\\\\\":null,\\\\\\\"ForTotalBaseAIU\\\\\\\":null,\\\\\\\"OrderReference\\\\\\\":\\\\\\\"Pref||123456\\\\\\\"},\\\\\\\"Items\\\\\\\":[{\\\\\\\"ProductCode\\\\\\\":234358,\\\\\\\"Description\\\\\\\":\\\\\\\"2 BOT. A.A. SIN AZUCAR 750 MAS CD MARTIN ELIAS\\\\\\\",\\\\\\\"LongDescription\\\\\\\":\\\\\\\"2 BOT. A.A. SIN AZUCAR 750 MAS CD MARTIN ELIAS\\\\\\\",\\\\\\\"DC\\\\\\\":-1,\\\\\\\"CostCenterCode\\\\\\\":null,\\\\\\\"WarehouseCode\\\\\\\":null,\\\\\\\"ACAccountCode\\\\\\\":null,\\\\\\\"ACPaymentMean\\\\\\\":null,\\\\\\\"AccountCode\\\\\\\":466105,\\\\\\\"ItemAccountCode\\\\\\\":466105,\\\\\\\"ConceptCode\\\\\\\":null,\\\\\\\"DueDate\\\\\\\":\\\\\\\"20200811\\\\\\\",\\\\\\\"Quantity\\\\\\\":12,\\\\\\\"Value\\\\\\\":12438000,\\\\\\\"TaxAddName\\\\\\\":\\\\\\\"IVA 19%\\\\\\\",\\\\\\\"TaxAddPercentage\\\\\\\":19,\\\\\\\"TaxAddValue\\\\\\\":2166000,\\\\\\\"TaxDiscName\\\\\\\":\\\\\\\"Retefuente 10%\\\\\\\",\\\\\\\"TaxDiscPercentage\\\\\\\":10,\\\\\\\"TaxDiscValue\\\\\\\":1140000,\\\\\\\"TaxAddCode\\\\\\\":32885,\\\\\\\"TaxDiscCode\\\\\\\":32888,\\\\\\\"ConsumptionValue\\\\\\\":null,\\\\\\\"FixedAssetCode\\\\\\\":null,\\\\\\\"DuePrefix\\\\\\\":null,\\\\\\\"DueConsecutive\\\\\\\":null,\\\\\\\"DueQuote\\\\\\\":null,\\\\\\\"GrossValue\\\\\\\":12000000,\\\\\\\"UnitValue\\\\\\\":1000000,\\\\\\\"UnitRealValue\\\\\\\":1000000,\\\\\\\"DiscountPercentage\\\\\\\":5,\\\\\\\"DiscountValue\\\\\\\":600000,\\\\\\\"BaseAIU\\\\\\\":11400000,\\\\\\\"ProductSubType\\\\\\\":0,\\\\\\\"SalesmanCode\\\\\\\":4788,\\\\\\\"TaxAdd2Code\\\\\\\":32901,\\\\\\\"TaxAdd2Value\\\\\\\":12000,\\\\\\\"TaxAdd2Percentage\\\\\\\":0,\\\\\\\"TaxAdd2Name\\\\\\\":\\\\\\\"Impoconsumo por valor\\\\\\\",\\\\\\\"TaxAddType\\\\\\\":1,\\\\\\\"TaxAdd2Type\\\\\\\":2,\\\\\\\"TaxDiscType\\\\\\\":0,\\\\\\\"PaymentType\\\\\\\":0,\\\\\\\"ForUnitValue\\\\\\\":null,\\\\\\\"ForUnitRealValue\\\\\\\":null,\\\\\\\"ForDiscountValue\\\\\\\":null,\\\\\\\"ForValue\\\\\\\":null,\\\\\\\"ForBaseAIU\\\\\\\":null,\\\\\\\"ForTaxAddValue\\\\\\\":null,\\\\\\\"ForTaxDiscValue\\\\\\\":null,\\\\\\\"ForTaxAdd2Value\\\\\\\":null,\\\\\\\"ForGrossValue\\\\\\\":null,\\\\\\\"ForConsumptionValue\\\\\\\":null,\\\\\\\"ForValueWithChargeTaxes\\\\\\\":null,\\\\\\\"DiscountReason\\\\\\\":null,\\\\\\\"ProductUnitMeasurement\\\\\\\":\\\\\\\"CLT\\\\\\\",\\\\\\\"AIUContractConcept\\\\\\\":\\\\\\\"\\\\\\\",\\\\\\\"ItemAccount\\\\\\\":{\\\\\\\"IdentificationType\\\\\\\":31,\\\\\\\"Identification\\\\\\\":\\\\\\\"899999107\\\\\\\",\\\\\\\"CheckDigit\\\\\\\":\\\\\\\"9\\\\\\\"},\\\\\\\"Tariff\\\\\\\":null,\\\\\\\"Model\\\\\\\":null,\\\\\\\"Brand\\\\\\\":null,\\\\\\\"IsVATExclusionCovered\\\\\\\":false,\\\\\\\"Order\\\\\\\":1,\\\\\\\"EntryItemType\\\\\\\":0},{\\\\\\\"ProductCode\\\\\\\":234359,\\\\\\\"Description\\\\\\\":\\\\\\\"A. REAL 1493 OFERTA 2X3\\\\\\\",\\\\\\\"LongDescription\\\\\\\":\\\\\\\"A. REAL 1493 OFERTA 2X3\\\\\\\",\\\\\\\"DC\\\\\\\":-1,\\\\\\\"CostCenterCode\\\\\\\":null,\\\\\\\"WarehouseCode\\\\\\\":1346,\\\\\\\"ACAccountCode\\\\\\\":null,\\\\\\\"ACPaymentMean\\\\\\\":null,\\\\\\\"AccountCode\\\\\\\":466105,\\\\\\\"ItemAccountCode\\\\\\\":466105,\\\\\\\"ConceptCode\\\\\\\":null,\\\\\\\"DueDate\\\\\\\":\\\\\\\"20200811\\\\\\\",\\\\\\\"Quantity\\\\\\\":11,\\\\\\\"Value\\\\\\\":8913591.34,\\\\\\\"TaxAddName\\\\\\\":\\\\\\\"IVA 19%\\\\\\\",\\\\\\\"TaxAddPercentage\\\\\\\":19,\\\\\\\"TaxAddValue\\\\\\\":167184.83,\\\\\\\"TaxDiscName\\\\\\\":\\\\\\\"Retefuente 6%\\\\\\\",\\\\\\\"TaxDiscPercentage\\\\\\\":6,\\\\\\\"TaxDiscValue\\\\\\\":52795.21,\\\\\\\"TaxAddCode\\\\\\\":32885,\\\\\\\"TaxDiscCode\\\\\\\":32889,\\\\\\\"ConsumptionValue\\\\\\\":null,\\\\\\\"FixedAssetCode\\\\\\\":null,\\\\\\\"DuePrefix\\\\\\\":null,\\\\\\\"DueConsecutive\\\\\\\":null,\\\\\\\"DueQuote\\\\\\\":null,\\\\\\\"GrossValue\\\\\\\":9071341.98,\\\\\\\"UnitValue\\\\\\\":824667.45285,\\\\\\\"UnitRealValue\\\\\\\":824667.45285,\\\\\\\"DiscountPercentage\\\\\\\":3,\\\\\\\"DiscountValue\\\\\\\":272140.26,\\\\\\\"BaseAIU\\\\\\\":879920.172,\\\\\\\"ProductSubType\\\\\\\":0,\\\\\\\"SalesmanCode\\\\\\\":4788,\\\\\\\"TaxAdd2Code\\\\\\\":null,\\\\\\\"TaxAdd2Value\\\\\\\":null,\\\\\\\"TaxAdd2Percentage\\\\\\\":0,\\\\\\\"TaxAdd2Name\\\\\\\":\\\\\\\"\\\\\\\",\\\\\\\"TaxAddType\\\\\\\":1,\\\\\\\"TaxAdd2Type\\\\\\\":0,\\\\\\\"TaxDiscType\\\\\\\":0,\\\\\\\"PaymentType\\\\\\\":0,\\\\\\\"ForUnitValue\\\\\\\":null,\\\\\\\"ForUnitRealValue\\\\\\\":null,\\\\\\\"ForDiscountValue\\\\\\\":null,\\\\\\\"ForValue\\\\\\\":null,\\\\\\\"ForBaseAIU\\\\\\\":null,\\\\\\\"ForTaxAddValue\\\\\\\":null,\\\\\\\"ForTaxDiscValue\\\\\\\":null,\\\\\\\"ForTaxAdd2Value\\\\\\\":null,\\\\\\\"ForGrossValue\\\\\\\":null,\\\\\\\"ForConsumptionValue\\\\\\\":null,\\\\\\\"ForValueWithChargeTaxes\\\\\\\":null,\\\\\\\"DiscountReason\\\\\\\":null,\\\\\\\"ProductUnitMeasurement\\\\\\\":\\\\\\\"94\\\\\\\",\\\\\\\"AIUContractConcept\\\\\\\":\\\\\\\"Contrato de Arrendamiento\\\\\\\",\\\\\\\"ItemAccount\\\\\\\":{\\\\\\\"IdentificationType\\\\\\\":31,\\\\\\\"Identification\\\\\\\":\\\\\\\"899999107\\\\\\\",\\\\\\\"CheckDigit\\\\\\\":\\\\\\\"9\\\\\\\"},\\\\\\\"Tariff\\\\\\\":null,\\\\\\\"Model\\\\\\\":null,\\\\\\\"Brand\\\\\\\":null,\\\\\\\"IsVATExclusionCovered\\\\\\\":false,\\\\\\\"Order\\\\\\\":2,\\\\\\\"EntryItemType\\\\\\\":0},{\\\\\\\"ProductCode\\\\\\\":null,\\\\\\\"Description\\\\\\\":\\\\\\\"ReteICA 13.8\\\\\\\",\\\\\\\"LongDescription\\\\\\\":null,\\\\\\\"DC\\\\\\\":1,\\\\\\\"CostCenterCode\\\\\\\":null,\\\\\\\"WarehouseCode\\\\\\\":null,\\\\\\\"ACAccountCode\\\\\\\":null,\\\\\\\"ACPaymentMean\\\\\\\":null,\\\\\\\"AccountCode\\\\\\\":466105,\\\\\\\"ItemAccountCode\\\\\\\":null,\\\\\\\"ConceptCode\\\\\\\":null,\\\\\\\"DueDate\\\\\\\":null,\\\\\\\"Quantity\\\\\\\":null,\\\\\\\"Value\\\\\\\":12142.9,\\\\\\\"TaxAddName\\\\\\\":\\\\\\\"ReteICA 13.8\\\\\\\",\\\\\\\"TaxAddPercentage\\\\\\\":13.8,\\\\\\\"TaxAddValue\\\\\\\":12142.9,\\\\\\\"TaxDiscName\\\\\\\":null,\\\\\\\"TaxDiscPercentage\\\\\\\":null,\\\\\\\"TaxDiscValue\\\\\\\":null,\\\\\\\"TaxAddCode\\\\\\\":32893,\\\\\\\"TaxDiscCode\\\\\\\":null,\\\\\\\"ConsumptionValue\\\\\\\":null,\\\\\\\"FixedAssetCode\\\\\\\":null,\\\\\\\"DuePrefix\\\\\\\":null,\\\\\\\"DueConsecutive\\\\\\\":null,\\\\\\\"DueQuote\\\\\\\":null,\\\\\\\"GrossValue\\\\\\\":879920.17,\\\\\\\"UnitValue\\\\\\\":null,\\\\\\\"UnitRealValue\\\\\\\":null,\\\\\\\"DiscountPercentage\\\\\\\":null,\\\\\\\"DiscountValue\\\\\\\":null,\\\\\\\"BaseAIU\\\\\\\":879920.17,\\\\\\\"ProductSubType\\\\\\\":null,\\\\\\\"SalesmanCode\\\\\\\":null,\\\\\\\"TaxAdd2Code\\\\\\\":null,\\\\\\\"TaxAdd2Value\\\\\\\":null,\\\\\\\"TaxAdd2Percentage\\\\\\\":null,\\\\\\\"TaxAdd2Name\\\\\\\":null,\\\\\\\"TaxAddType\\\\\\\":0,\\\\\\\"TaxAdd2Type\\\\\\\":0,\\\\\\\"TaxDiscType\\\\\\\":0,\\\\\\\"PaymentType\\\\\\\":0,\\\\\\\"ForUnitValue\\\\\\\":null,\\\\\\\"ForUnitRealValue\\\\\\\":null,\\\\\\\"ForDiscountValue\\\\\\\":null,\\\\\\\"ForValue\\\\\\\":null,\\\\\\\"ForBaseAIU\\\\\\\":null,\\\\\\\"ForTaxAddValue\\\\\\\":null,\\\\\\\"ForTaxDiscValue\\\\\\\":null,\\\\\\\"ForTaxAdd2Value\\\\\\\":null,\\\\\\\"ForGrossValue\\\\\\\":null,\\\\\\\"ForConsumptionValue\\\\\\\":null,\\\\\\\"ForValueWithChargeTaxes\\\\\\\":null,\\\\\\\"DiscountReason\\\\\\\":null,\\\\\\\"ProductUnitMeasurement\\\\\\\":\\\\\\\"ZZ\\\\\\\",\\\\\\\"AIUContractConcept\\\\\\\":\\\\\\\"\\\\\\\",\\\\\\\"ItemAccount\\\\\\\":null,\\\\\\\"Tariff\\\\\\\":null,\\\\\\\"Model\\\\\\\":null,\\\\\\\"Brand\\\\\\\":null,\\\\\\\"IsVATExclusionCovered\\\\\\\":false,\\\\\\\"Order\\\\\\\":3,\\\\\\\"EntryItemType\\\\\\\":1},{\\\\\\\"ProductCode\\\\\\\":null,\\\\\\\"Description\\\\\\\":\\\\\\\"ReteIVA 15%\\\\\\\",\\\\\\\"LongDescription\\\\\\\":null,\\\\\\\"DC\\\\\\\":1,\\\\\\\"CostCenterCode\\\\\\\":null,\\\\\\\"WarehouseCode\\\\\\\":null,\\\\\\\"ACAccountCode\\\\\\\":null,\\\\\\\"ACPaymentMean\\\\\\\":null,\\\\\\\"AccountCode\\\\\\\":466105,\\\\\\\"ItemAccountCode\\\\\\\":null,\\\\\\\"ConceptCode\\\\\\\":null,\\\\\\\"DueDate\\\\\\\":null,\\\\\\\"Quantity\\\\\\\":null,\\\\\\\"Value\\\\\\\":349977.72,\\\\\\\"TaxAddName\\\\\\\":\\\\\\\"ReteIVA 15%\\\\\\\",\\\\\\\"TaxAddPercentage\\\\\\\":15,\\\\\\\"TaxAddValue\\\\\\\":349977.72,\\\\\\\"TaxDiscName\\\\\\\":null,\\\\\\\"TaxDiscPercentage\\\\\\\":null,\\\\\\\"TaxDiscValue\\\\\\\":null,\\\\\\\"TaxAddCode\\\\\\\":32899,\\\\\\\"TaxDiscCode\\\\\\\":null,\\\\\\\"ConsumptionValue\\\\\\\":null,\\\\\\\"FixedAssetCode\\\\\\\":null,\\\\\\\"DuePrefix\\\\\\\":null,\\\\\\\"DueConsecutive\\\\\\\":null,\\\\\\\"DueQuote\\\\\\\":null,\\\\\\\"GrossValue\\\\\\\":2333184.83,\\\\\\\"UnitValue\\\\\\\":null,\\\\\\\"UnitRealValue\\\\\\\":null,\\\\\\\"DiscountPercentage\\\\\\\":null,\\\\\\\"DiscountValue\\\\\\\":null,\\\\\\\"BaseAIU\\\\\\\":2333184.83,\\\\\\\"ProductSubType\\\\\\\":null,\\\\\\\"SalesmanCode\\\\\\\":null,\\\\\\\"TaxAdd2Code\\\\\\\":null,\\\\\\\"TaxAdd2Value\\\\\\\":null,\\\\\\\"TaxAdd2Percentage\\\\\\\":null,\\\\\\\"TaxAdd2Name\\\\\\\":null,\\\\\\\"TaxAddType\\\\\\\":0,\\\\\\\"TaxAdd2Type\\\\\\\":0,\\\\\\\"TaxDiscType\\\\\\\":0,\\\\\\\"PaymentType\\\\\\\":0,\\\\\\\"ForUnitValue\\\\\\\":null,\\\\\\\"ForUnitRealValue\\\\\\\":null,\\\\\\\"ForDiscountValue\\\\\\\":null,\\\\\\\"ForValue\\\\\\\":null,\\\\\\\"ForBaseAIU\\\\\\\":null,\\\\\\\"ForTaxAddValue\\\\\\\":null,\\\\\\\"ForTaxDiscValue\\\\\\\":null,\\\\\\\"ForTaxAdd2Value\\\\\\\":null,\\\\\\\"ForGrossValue\\\\\\\":null,\\\\\\\"ForConsumptionValue\\\\\\\":null,\\\\\\\"ForValueWithChargeTaxes\\\\\\\":null,\\\\\\\"DiscountReason\\\\\\\":null,\\\\\\\"ProductUnitMeasurement\\\\\\\":\\\\\\\"ZZ\\\\\\\",\\\\\\\"AIUContractConcept\\\\\\\":\\\\\\\"\\\\\\\",\\\\\\\"ItemAccount\\\\\\\":null,\\\\\\\"Tariff\\\\\\\":null,\\\\\\\"Model\\\\\\\":null,\\\\\\\"Brand\\\\\\\":null,\\\\\\\"IsVATExclusionCovered\\\\\\\":false,\\\\\\\"Order\\\\\\\":4,\\\\\\\"EntryItemType\\\\\\\":1},{\\\\\\\"ProductCode\\\\\\\":null,\\\\\\\"Description\\\\\\\":\\\\\\\"Ars Convida\\\\\\\",\\\\\\\"LongDescription\\\\\\\":null,\\\\\\\"DC\\\\\\\":1,\\\\\\\"CostCenterCode\\\\\\\":null,\\\\\\\"WarehouseCode\\\\\\\":null,\\\\\\\"ACAccountCode\\\\\\\":1399059,\\\\\\\"ACPaymentMean\\\\\\\":13286,\\\\\\\"AccountCode\\\\\\\":466105,\\\\\\\"ItemAccountCode\\\\\\\":null,\\\\\\\"ConceptCode\\\\\\\":null,\\\\\\\"DueDate\\\\\\\":null,\\\\\\\"Quantity\\\\\\\":null,\\\\\\\"Value\\\\\\\":10000000,\\\\\\\"TaxAddName\\\\\\\":null,\\\\\\\"TaxAddPercentage\\\\\\\":null,\\\\\\\"TaxAddValue\\\\\\\":null,\\\\\\\"TaxDiscName\\\\\\\":null,\\\\\\\"TaxDiscPercentage\\\\\\\":null,\\\\\\\"TaxDiscValue\\\\\\\":null,\\\\\\\"TaxAddCode\\\\\\\":null,\\\\\\\"TaxDiscCode\\\\\\\":null,\\\\\\\"ConsumptionValue\\\\\\\":null,\\\\\\\"FixedAssetCode\\\\\\\":null,\\\\\\\"DuePrefix\\\\\\\":null,\\\\\\\"DueConsecutive\\\\\\\":null,\\\\\\\"DueQuote\\\\\\\":null,\\\\\\\"GrossValue\\\\\\\":null,\\\\\\\"UnitValue\\\\\\\":null,\\\\\\\"UnitRealValue\\\\\\\":null,\\\\\\\"DiscountPercentage\\\\\\\":null,\\\\\\\"DiscountValue\\\\\\\":null,\\\\\\\"BaseAIU\\\\\\\":0,\\\\\\\"ProductSubType\\\\\\\":null,\\\\\\\"SalesmanCode\\\\\\\":null,\\\\\\\"TaxAdd2Code\\\\\\\":null,\\\\\\\"TaxAdd2Value\\\\\\\":null,\\\\\\\"TaxAdd2Percentage\\\\\\\":null,\\\\\\\"TaxAdd2Name\\\\\\\":null,\\\\\\\"TaxAddType\\\\\\\":0,\\\\\\\"TaxAdd2Type\\\\\\\":0,\\\\\\\"TaxDiscType\\\\\\\":0,\\\\\\\"PaymentType\\\\\\\":10,\\\\\\\"ForUnitValue\\\\\\\":null,\\\\\\\"ForUnitRealValue\\\\\\\":null,\\\\\\\"ForDiscountValue\\\\\\\":null,\\\\\\\"ForValue\\\\\\\":null,\\\\\\\"ForBaseAIU\\\\\\\":null,\\\\\\\"ForTaxAddValue\\\\\\\":null,\\\\\\\"ForTaxDiscValue\\\\\\\":null,\\\\\\\"ForTaxAdd2Value\\\\\\\":null,\\\\\\\"ForGrossValue\\\\\\\":null,\\\\\\\"ForConsumptionValue\\\\\\\":null,\\\\\\\"ForValueWithChargeTaxes\\\\\\\":null,\\\\\\\"DiscountReason\\\\\\\":null,\\\\\\\"ProductUnitMeasurement\\\\\\\":\\\\\\\"ZZ\\\\\\\",\\\\\\\"AIUContractConcept\\\\\\\":\\\\\\\"\\\\\\\",\\\\\\\"ItemAccount\\\\\\\":null,\\\\\\\"Tariff\\\\\\\":null,\\\\\\\"Model\\\\\\\":null,\\\\\\\"Brand\\\\\\\":null,\\\\\\\"IsVATExclusionCovered\\\\\\\":false,\\\\\\\"Order\\\\\\\":5,\\\\\\\"EntryItemType\\\\\\\":3},{\\\\\\\"ProductCode\\\\\\\":null,\\\\\\\"Description\\\\\\\":\\\\\\\"Ars Convida\\\\\\\",\\\\\\\"LongDescription\\\\\\\":null,\\\\\\\"DC\\\\\\\":1,\\\\\\\"CostCenterCode\\\\\\\":null,\\\\\\\"WarehouseCode\\\\\\\":null,\\\\\\\"ACAccountCode\\\\\\\":1399094,\\\\\\\"ACPaymentMean\\\\\\\":13287,\\\\\\\"AccountCode\\\\\\\":466105,\\\\\\\"ItemAccountCode\\\\\\\":null,\\\\\\\"ConceptCode\\\\\\\":null,\\\\\\\"DueDate\\\\\\\":\\\\\\\"20200826\\\\\\\",\\\\\\\"Quantity\\\\\\\":null,\\\\\\\"Value\\\\\\\":10989470.72,\\\\\\\"TaxAddName\\\\\\\":null,\\\\\\\"TaxAddPercentage\\\\\\\":null,\\\\\\\"TaxAddValue\\\\\\\":null,\\\\\\\"TaxDiscName\\\\\\\":null,\\\\\\\"TaxDiscPercentage\\\\\\\":null,\\\\\\\"TaxDiscValue\\\\\\\":null,\\\\\\\"TaxAddCode\\\\\\\":null,\\\\\\\"TaxDiscCode\\\\\\\":null,\\\\\\\"ConsumptionValue\\\\\\\":null,\\\\\\\"FixedAssetCode\\\\\\\":null,\\\\\\\"DuePrefix\\\\\\\":\\\\\\\"FV-2\\\\\\\",\\\\\\\"DueConsecutive\\\\\\\":991001106,\\\\\\\"DueQuote\\\\\\\":1,\\\\\\\"GrossValue\\\\\\\":null,\\\\\\\"UnitValue\\\\\\\":null,\\\\\\\"UnitRealValue\\\\\\\":null,\\\\\\\"DiscountPercentage\\\\\\\":null,\\\\\\\"DiscountValue\\\\\\\":null,\\\\\\\"BaseAIU\\\\\\\":0,\\\\\\\"ProductSubType\\\\\\\":null,\\\\\\\"SalesmanCode\\\\\\\":null,\\\\\\\"TaxAdd2Code\\\\\\\":null,\\\\\\\"TaxAdd2Value\\\\\\\":null,\\\\\\\"TaxAdd2Percentage\\\\\\\":null,\\\\\\\"TaxAdd2Name\\\\\\\":null,\\\\\\\"TaxAddType\\\\\\\":0,\\\\\\\"TaxAdd2Type\\\\\\\":0,\\\\\\\"TaxDiscType\\\\\\\":0,\\\\\\\"PaymentType\\\\\\\":78,\\\\\\\"ForUnitValue\\\\\\\":null,\\\\\\\"ForUnitRealValue\\\\\\\":null,\\\\\\\"ForDiscountValue\\\\\\\":null,\\\\\\\"ForValue\\\\\\\":null,\\\\\\\"ForBaseAIU\\\\\\\":null,\\\\\\\"ForTaxAddValue\\\\\\\":null,\\\\\\\"ForTaxDiscValue\\\\\\\":null,\\\\\\\"ForTaxAdd2Value\\\\\\\":null,\\\\\\\"ForGrossValue\\\\\\\":null,\\\\\\\"ForConsumptionValue\\\\\\\":null,\\\\\\\"ForValueWithChargeTaxes\\\\\\\":null,\\\\\\\"DiscountReason\\\\\\\":null,\\\\\\\"ProductUnitMeasurement\\\\\\\":\\\\\\\"ZZ\\\\\\\",\\\\\\\"AIUContractConcept\\\\\\\":\\\\\\\"\\\\\\\",\\\\\\\"ItemAccount\\\\\\\":null,\\\\\\\"Tariff\\\\\\\":null,\\\\\\\"Model\\\\\\\":null,\\\\\\\"Brand\\\\\\\":null,\\\\\\\"IsVATExclusionCovered\\\\\\\":false,\\\\\\\"Order\\\\\\\":6,\\\\\\\"EntryItemType\\\\\\\":3}],\\\\\\\"Nit\\\\\\\":\\\\\\\"830048145\\\\\\\",\\\\\\\"ThirdParty\\\\\\\":{\\\\\\\"AdditionalAccountID\\\\\\\":1,\\\\\\\"IdentificationType\\\\\\\":31,\\\\\\\"PartyIdentification\\\\\\\":\\\\\\\"899999107\\\\\\\",\\\\\\\"PartyName\\\\\\\":\\\\\\\"\\\\\\\",\\\\\\\"PhysicalLocation\\\\\\\":{\\\\\\\"Department\\\\\\\":\\\\\\\"Cundinamarca\\\\\\\",\\\\\\\"DepartmentCode\\\\\\\":\\\\\\\"25\\\\\\\",\\\\\\\"CitySubdivisionName\\\\\\\":null,\\\\\\\"CityName\\\\\\\":\\\\\\\"Bosa\\\\\\\",\\\\\\\"AddressLine\\\\\\\":\\\\\\\"Carrera 58 No. 9-97\\\\\\\",\\\\\\\"CountryCode\\\\\\\":\\\\\\\"Co\\\\\\\",\\\\\\\"CityId\\\\\\\":354},\\\\\\\"TaxLevelCode\\\\\\\":49,\\\\\\\"TaxScheme\\\\\\\":\\\\\\\"\\\\\\\",\\\\\\\"RegistrationName\\\\\\\":\\\\\\\"Ars Convida\\\\\\\",\\\\\\\"PersonFirstName\\\\\\\":\\\\\\\"\\\\\\\",\\\\\\\"PersonLastNames\\\\\\\":\\\\\\\"\\\\\\\",\\\\\\\"PersonMiddleName\\\\\\\":\\\\\\\"\\\\\\\",\\\\\\\"FullName\\\\\\\":\\\\\\\" \\\\\\\",\\\\\\\"Email\\\\\\\":\\\\\\\"luis.romero@siigo.com\\\\\\\",\\\\\\\"Phone\\\\\\\":\\\\\\\"2556699\\\\\\\",\\\\\\\"ContactName\\\\\\\":\\\\\\\"Luis Romero\\\\\\\",\\\\\\\"ContactEmail\\\\\\\":\\\\\\\"luis.romero@siigo.com\\\\\\\",\\\\\\\"TradeName\\\\\\\":null,\\\\\\\"PostalCode\\\\\\\":\\\\\\\"0\\\\\\\",\\\\\\\"PartyTaxCodes\\\\\\\":null,\\\\\\\"FiscalResponsibilities\\\\\\\":\\\\\\\"R-99-PN\\\\\\\",\\\\\\\"CheckDigit\\\\\\\":\\\\\\\"9\\\\\\\",\\\\\\\"BranchOffice\\\\\\\":0},\\\\\\\"CompanyInfo\\\\\\\":{\\\\\\\"AdditionalAccountID\\\\\\\":1,\\\\\\\"IdentificationType\\\\\\\":31,\\\\\\\"PartyIdentification\\\\\\\":\\\\\\\"830048145\\\\\\\",\\\\\\\"PartyName\\\\\\\":\\\\\\\"SIIGO TECH MF\\\\\\\",\\\\\\\"PhysicalLocation\\\\\\\":{\\\\\\\"Department\\\\\\\":\\\\\\\"Bogotá D.C\\\\\\\",\\\\\\\"DepartmentCode\\\\\\\":\\\\\\\"11\\\\\\\",\\\\\\\"CitySubdivisionName\\\\\\\":null,\\\\\\\"CityName\\\\\\\":\\\\\\\"Bogotá\\\\\\\",\\\\\\\"AddressLine\\\\\\\":\\\\\\\"Carrera 10 No 85 - 20\\\\\\\",\\\\\\\"CountryCode\\\\\\\":\\\\\\\"Co\\\\\\\",\\\\\\\"CityId\\\\\\\":1},\\\\\\\"TaxLevelCode\\\\\\\":48,\\\\\\\"TaxScheme\\\\\\\":\\\\\\\"\\\\\\\",\\\\\\\"RegistrationName\\\\\\\":\\\\\\\"SIIGO TECH MF\\\\\\\",\\\\\\\"PersonFirstName\\\\\\\":\\\\\\\"SIIGO\\\\\\\",\\\\\\\"PersonLastNames\\\\\\\":\\\\\\\"MF\\\\\\\",\\\\\\\"PersonMiddleName\\\\\\\":\\\\\\\"TECH\\\\\\\",\\\\\\\"FullName\\\\\\\":\\\\\\\"SIIGO TECH MF\\\\\\\",\\\\\\\"Email\\\\\\\":\\\\\\\"paola.cely@siigo.com\\\\\\\",\\\\\\\"Phone\\\\\\\":\\\\\\\"|6337150|\\\\\\\",\\\\\\\"ContactName\\\\\\\":\\\\\\\"SIIGO TECH MF\\\\\\\",\\\\\\\"ContactEmail\\\\\\\":null,\\\\\\\"TradeName\\\\\\\":\\\\\\\"SIIGO TECH MF\\\\\\\",\\\\\\\"PostalCode\\\\\\\":\\\\\\\"110531\\\\\\\",\\\\\\\"PartyTaxCodes\\\\\\\":\\\\\\\"01;06;07\\\\\\\",\\\\\\\"FiscalResponsibilities\\\\\\\":\\\\\\\"O-13\\\\\\\",\\\\\\\"CheckDigit\\\\\\\":null,\\\\\\\"BranchOffice\\\\\\\":0},\\\\\\\"IsEntryTestMode\\\\\\\":false,\\\\\\\"DianResModel\\\\\\\":{\\\\\\\"InvoiceAuthorization\\\\\\\":\\\\\\\"18760000001\\\\\\\",\\\\\\\"ResolutionDate\\\\\\\":\\\\\\\"0001-01-01T00:00:00\\\\\\\",\\\\\\\"ResolutionEndDate\\\\\\\":\\\\\\\"0001-01-01T00:00:00\\\\\\\",\\\\\\\"Prefix\\\\\\\":\\\\\\\"SETP\\\\\\\",\\\\\\\"numberStart\\\\\\\":0,\\\\\\\"numberEnd\\\\\\\":0,\\\\\\\"countryCode\\\\\\\":null,\\\\\\\"ProviderID\\\\\\\":null,\\\\\\\"SoftwareID\\\\\\\":null,\\\\\\\"SoftwareSecurityCode\\\\\\\":null,\\\\\\\"DianResolutionID\\\\\\\":0,\\\\\\\"TechnicalKey\\\\\\\":null,\\\\\\\"EntryType\\\\\\\":0,\\\\\\\"TestID\\\\\\\":null},\\\\\\\"IsEmergencyInvoice\\\\\\\":null,\\\\\\\"ModelType\\\\\\\":0,\\\\\\\"AttachFiles\\\\\\\":null}\\\",\\\"Origin\\\":1,\\\"Token\\\":\\\"eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsIng1dCI6ImEzck1VZ01Gdjl0UGNsTGE2eUYzekFrZnF1RSIsImtpZCI6ImEzck1VZ01Gdjl0UGNsTGE2eUYzekFrZnF1RSJ9.eyJpc3MiOiJodHRwOi8vNDAuNzkuNjYuMTQwOjUwMDA5IiwiYXVkIjoiaHR0cDovLzQwLjc5LjY2LjE0MDo1MDAwOS9yZXNvdXJjZXMiLCJleHAiOjE1OTc3ODk2NTEsIm5iZiI6MTU5Nzc4MjQ1MSwiY2xpZW50X2lkIjoiZVNpaWdvV2ViQVBJIiwic2NvcGUiOlsib2ZmbGluZV9hY2Nlc3MiLCJXZWJBcGkiXSwic3ViIjoiMjA5NDgiLCJhdXRoX3RpbWUiOjE1OTc3ODI0NTEsImlkcCI6Imlkc3J2IiwibWFpbF9zaWlnbyI6InNpaWdvQHRlY2htZi5jb20iLCJjbG91ZF90ZW5hbnRfY29tcGFueV9rZXkiOiJTSUlHT19URUNIX01GXzAxXzAwIiwicm9sZSI6ImFkbWluIiwiY2xvdWRfdGVuYW50X2lkIjoiNTM3NzJiM2MtOWUwYi00MDIwLTk4MTQtNDE1YzMyMzRkYzY2IiwiaXNfc3VwZXJfYWRtaW4iOiJGYWxzZSIsImNsb3VkX3RlbmFudF9wcm9kdWN0dHlwZSI6IjEiLCJpc19zZW5kX2FjdGl2ZSI6IjEiLCJhbXIiOlsicGFzc3dvcmQiXX0.DuJdNozmxMHnU2hhrXyLyg2e3PkfDw1O1g_sSfEX35PnPKFJBRFs3nBZYIfP5l6vYNbcS45xsxeDT0k45qYJoP1HZkNGejfLLHBCONFVjI_hP3C-jLtXP2OuUbC5N6TIWgGIj3Be7aEKbO4-933IVDlV5-B0oyB1kaKThIfLzOX7ug8qXUgSatda9eogO4TZYdaUdqjhAFijIuu8GEseMC5EmCjUV8wX5yqJ_DDxNkVkKkWGBKeok3xUgLhhBkXWaE-JDZeC7_59YNc4OYw3-ne_DlHpw1iq3q7ozD5PMXak3lS6luKxYIEav-YzDi4PnKCbxZk3NYSMuq7uKE7H-g\\\",\\\"CloudTenantID\\\":\\\"53772b3c-9e0b-4020-9814-415c3234dc66\\\",\\\"TransactionID\\\":\\\"a6ac03cd-2d03-4492-998e-733f0feb42c2\\\",\\\"SiigoCloudTenantID\\\":null,\\\"typeTestDocument\\\":0,\\\"IsBigMessage\\\":false,\\\"CompanyKey\\\":\\\"SIIGO_TECH_MF_01_00\\\"}\",\"processState\":2,\"dianResponse\":0,\"response\":\"[]\",\"cufe\":\"a7a41d1c54ddc5680f509cb599dca847c7e3f845fe2872e002d01de8203d26e138397007152658dfd29927a3de82135e7\",\"qrData\":\"NumFac:SETP991001106\\nFecFac:2020-08-11\\nHorFac:12:20:00-05:00\\nNitFac:830048145\\nDocAdq:899999107\\nValFac:20199201.72\\nValIva:2333184.83\\nValOtroIm:12000.0\\nValTolFac:22544386.55\\nCUFE:7a41d1c54ddc5680f509cb599dca847c7e3f845fe2872e002d01de8203d26e138397007152658dfd29927a3de82135e7\\nhttps://catalogo-vpfe-hab.dian.gov.co/document/searchqr?documentkey=7a41d1c54ddc5680f509cb599dca847c7e3f845fe2872e002d01de8203d26e138397007152658dfd29927a3de82135e7\",\"partitionKey\":\"InvoiceSale\",\"rowKey\":\"a6ac03cd-2d03-4492-998e-733f0feb42c2\",\"timestamp\":\"2020-08-18T20:28:11+00:00\",\"eTag\":\"W/\\\"datetime'2020-08-18T20%3A28%3A11.6533250Z'\\\"\",\"zipKey\":null,\"finished\":true,\"validationDate\":\"2020-08-18T15:28:07.0330834Z\",\"prefix\":null,\"consecutive\":991001106,\"isValid\":true,\"siigoCloudTenantID\":null,\"isEntryTestMode\":false,\"saveAsProduction\":false,\"testID\":null,\"entryID\":0,\"cloudTenantID\":null,\"typeTestDocument\":0,\"origin\":0,\"token\":null,\"erpPrefix\":null,\"deliveryCount\":0,\"eventRequest\":null}\r",
+									"jsonTest = JSON.stringify(jsonTest)\r",
+									"\r",
+									"pm.collectionVariables.set(\"statusGetPayroll\", 200);\r",
+									"\r",
+									"pm.collectionVariables.set(\"jsonTest\" , jsonTest);\r",
+									"\r",
+									"pm.collectionVariables.set(\"index\",\"byProperties\");\r",
+									"\r",
+									"pm.collectionVariables.set(\"pathlevel\", '');\r",
+									"\r",
+									"pm.collectionVariables.set(\"propertyList\", \"cufe\");\r",
+									"\r",
+									"pm.collectionVariables.set(\"pathNameIndexByProperties\", \"novelties\");\r",
+									"\r",
+									"pm.collectionVariables.set(\"scenario\", \"Escenario no definido\");\r",
+									"\r",
+									"pm.collectionVariables.set(\"saveRequestBody\", \"a6ac03cd-2d03-4492-998e-733f0feb42c2\");\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"id": "ee86646c-5465-4f5b-b5aa-10dd4582ed62",
+								"exec": [
+									"//Captura el código de estado que viene en el archivo\r",
+									"testStatus = pm.variables.get(\"statusGetByTransactionResult\");\r",
+									"scenario = pm.variables.get(\"scenario\");\r",
+									"//Obtiene el json de respuesta de la ejecución\r",
+									"if (responseBody != \"\") {\r",
+									"    responseData = JSON.parse(responseBody);\r",
+									"}\r",
+									"//Obtiene el json de respuesta del archivo\r",
+									"if (pm.variables.get(\"jsonTest\") != \"\") {\r",
+									"    csvResponseBody = JSON.parse(pm.variables.get(\"jsonTest\"));\r",
+									"}\r",
+									"//Obtiene el array con las propiedades que se verificarán\r",
+									"propertyList = (pm.variables.get(\"propertyList\")).split(\",\");\r",
+									"\r",
+									"pathlevel = pm.variables.get(\"pathlevel\");\r",
+									"pathNameIndexByProperties = pm.variables.get(\"pathNameIndexByProperties\");\r",
+									"\r",
+									"index = pm.variables.get(\"index\");\r",
+									"//contador\r",
+									"try {\r",
+									"    var csvRespondeLength = Object.keys(getValueJSON(pathlevel, csvResponseBody)).length;\r",
+									"\r",
+									"} catch (e) { console.log(\"Contador csvRespondeLength Null\") }\r",
+									"\r",
+									"/******************************\r",
+									"        Funciones\r",
+									" *****************************/\r",
+									"\r",
+									"function getValueJSON(nameKey, objRef) {\r",
+									"\r",
+									"    var arrKeys = nameKey.split('.');\r",
+									"    var objValue = { ...objRef };\r",
+									"    var propName = '';\r",
+									"    var propArrIndex = 0;\r",
+									"\r",
+									"    for (i = 0; i < arrKeys.length; i++) {\r",
+									"\r",
+									"        propName = arrKeys[i];\r",
+									"\r",
+									"        if (propName.indexOf('[') > -1) {\r",
+									"\r",
+									"            propArrIndex = propName.match(/\\[([^)]+)\\]/)[1];\r",
+									"            propName = propName.substring(0, propName.indexOf('['));\r",
+									"            objValue = objValue[propName][propArrIndex];\r",
+									"\r",
+									"        }\r",
+									"\r",
+									"        else {\r",
+									"\r",
+									"            objValue = objValue[propName];\r",
+									"\r",
+									"        }\r",
+									"\r",
+									"    }\r",
+									"\r",
+									"    return objValue;\r",
+									"\r",
+									"}\r",
+									"\r",
+									"//Verifica qué función se debe ejecutar para verificar la información \r",
+									"function selectFunctByIndex() {\r",
+									"    switch (index) {\r",
+									"        case 'byProperties':\r",
+									"            return validateByProperties();\r",
+									"\r",
+									"        case 'byIndex':\r",
+									"            return validateByIndex();\r",
+									"\r",
+									"        case 'indexByProperties':\r",
+									"            return validateIndexByProperties();\r",
+									"\r",
+									"        case 'IndexByPropertiesByIndex':\r",
+									"            return validateIndexByPropertiesByIndex();\r",
+									"\r",
+									"        default:\r",
+									"            return \"Opcion no definida verifique los datos\"\r",
+									"    }\r",
+									"}\r",
+									"\r",
+									"//Función para verificar la data en los niveles que No son arrays\r",
+									"function validateByProperties() {\r",
+									"    console.log(\"validateByProperties\")\r",
+									"    var responBody, responCsvBody;\r",
+									"    for (propierty in propertyList) {\r",
+									"        //variables para recorrer la respuesta del request y la respuesta del csv\r",
+									"        responBody = getValueJSON(pathlevel + \"\" + propertyList[propierty], responseData);\r",
+									"        responCsvBody = getValueJSON(pathlevel + \"\" + propertyList[propierty], csvResponseBody);\r",
+									"\r",
+									"        if (responBody != responCsvBody) {\r",
+									"            report = (\"el valor no coincide: \" + propertyList[propierty] + \" Valor response: \" + responBody + \" valor csv: \" + responCsvBody);\r",
+									"            pm.collectionVariables.set(\"reporte\", false);\r",
+									"            return report;\r",
+									"        }\r",
+									"        else {\r",
+									"            pm.collectionVariables.set(\"reporte\", true);\r",
+									"        }\r",
+									"    }\r",
+									"    return (\"es correcta\");\r",
+									"}\r",
+									"\r",
+									"function validateByIndex() {\r",
+									"    console.log(\"validateByIndex\")\r",
+									"\r",
+									"    var i = 0;\r",
+									"    var responBody, responCsvBody;\r",
+									"    do {\r",
+									"        for (propierty in propertyList) {\r",
+									"            //variables para recorrer la respuesta del request y la respuesta del csv\r",
+									"            responBody = getValueJSON(pathlevel + \"[\" + i + \"].\" + propertyList[propierty], responseData);\r",
+									"            responCsvBody = getValueJSON(pathlevel + \"[\" + i + \"].\" + propertyList[propierty], csvResponseBody);\r",
+									"\r",
+									"            if (responBody != responCsvBody) {\r",
+									"                report = (\"el valor no coincide: \" + propertyList[propierty] + \" Valor response: \" + responBody + \" valor csv: \" + responCsvBody + \" El empleado con el error es :\" + getValueJSON(pathlevel + \"[\" + i + \"].fullName\", csvResponseBody));\r",
+									"                pm.collectionVariables.set(\"reporte\", false);\r",
+									"                return report;\r",
+									"            }\r",
+									"            else {\r",
+									"                pm.collectionVariables.set(\"reporte\", true);\r",
+									"            }\r",
+									"        }\r",
+									"        i++;\r",
+									"    } while (i < csvRespondeLength)\r",
+									"    return (\"es correcta\");\r",
+									"}\r",
+									"\r",
+									"function validateIndexByProperties() {\r",
+									"    console.log(\"validateIndexByProperties\")\r",
+									"\r",
+									"    var i = 0;\r",
+									"    var responBody, responCsvBody;\r",
+									"    do {\r",
+									"        for (propierty in propertyList) {\r",
+									"            //variables para recorrer la respuesta del request y la respuesta del csv\r",
+									"            responBody = getValueJSON(pathlevel + \"[\" + i + \"].\" + pathNameIndexByProperties + \".\" + propertyList[propierty], responseData);\r",
+									"            responCsvBody = getValueJSON(pathlevel + \"[\" + i + \"].\" + pathNameIndexByProperties + \".\" + propertyList[propierty], csvResponseBody);\r",
+									"            console.log(\"responBody = \" + responBody + \" != \" + responCsvBody + \" = responCsvBody\")\r",
+									"            if (responBody != responCsvBody) {\r",
+									"                report = (\"el valor no coincide: \" + propertyList[propierty] + \" Valor response: \" + responBody + \" valor csv: \" + responCsvBody);\r",
+									"                pm.collectionVariables.set(\"reporte\", false);\r",
+									"                return report;\r",
+									"            }\r",
+									"            else {\r",
+									"                pm.collectionVariables.set(\"reporte\", true);\r",
+									"            }\r",
+									"        }\r",
+									"        i++;\r",
+									"    } while (i < csvRespondeLength)\r",
+									"    return (\"es correcta\");\r",
+									"}\r",
+									"\r",
+									"function validateIndexByPropertiesByIndex() {\r",
+									"    console.log(\"validateIndexByPropertiesByIndex\")\r",
+									"    var i = 0;\r",
+									"    var responBody, responCsvBody;\r",
+									"    do {\r",
+									"        try {\r",
+									"            var csvRespondeLengthTwo = Object.keys(getValueJSON(pathlevel + \"[\" + i + \"].\" + levelNameIndexByProperties, csvResponseBody)).length;\r",
+									"        } catch (e) { console.log(\"Contador csvRespondeLength Null\") }\r",
+									"\r",
+									"        for (var j = 0; j < csvRespondeLengthTwo; j++) {\r",
+									"            for (propierty in propertyList) {\r",
+									"                //variables para recorrer la respuesta del request y la respuesta del csv\r",
+									"                responBody = getValueJSON(pathlevel + \"[\" + i + \"].\" + pathNameIndexByProperties + \"[\" + j + \"].\" + propertyList[propierty], responseData);\r",
+									"                responCsvBody = getValueJSON(pathlevel + \"[\" + i + \"].\" + pathNameIndexByProperties + \"[\" + j + \"].\" + propertyList[propierty], csvResponseBody);\r",
+									"                if (responBody != responCsvBody) {\r",
+									"                    report = (\"el valor no coincide: \" + propertyList[propierty] + \" Valor response: \" + responBody + \" valor csv: \" + responCsvBody + \" El empleado con el error es :\" + getValueJSON(pathlevel + \"[\" + i + \"].fullName\", csvResponseBody));\r",
+									"                    pm.collectionVariables.set(\"reporte\", false);\r",
+									"                    return report;\r",
+									"                }\r",
+									"                else {\r",
+									"                    pm.collectionVariables.set(\"reporte\", true);\r",
+									"                }\r",
+									"            }\r",
+									"        }\r",
+									"        i++;\r",
+									"    } while (i < csvRespondeLength)\r",
+									"    return (\"es correcta\");\r",
+									"}\r",
+									"\r",
+									"\r",
+									"//Test que verifica el código de estado\r",
+									"pm.test(\"Escenario Get: \" + scenario + \": Código de estado es: \" + testStatus, function () {\r",
+									"    pm.response.to.have.status(testStatus);\r",
+									"});\r",
+									"\r",
+									"//Test para verificar el tiempo de respuesta\r",
+									"pm.test(\"Escenario Get: \" + scenario + \": Tiempo de respuesta es menor a 4500\", function () {\r",
+									"    pm.expect(pm.response.responseTime).to.be.below(4500);\r",
+									"});\r",
+									"\r",
+									"if (testStatus == 200) {\r",
+									"    //Test para velificar la información\r",
+									"    pm.test(\"Escenario Get: \" + scenario + \": Verificación de la información \" + selectFunctByIndex(), function () {\r",
+									"        pm.expect(pm.collectionVariables.get(\"reporte\")).to.eql(true);\r",
+									"    });\r",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "\"{{saveRequestBody}}\"",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{urlelectronicbillingservice}}/api/Transaction/GetByTransactionResult",
+							"host": [
+								"{{urlelectronicbillingservice}}"
+							],
+							"path": [
+								"api",
+								"Transaction",
+								"GetByTransactionResult"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"protocolProfileBehavior": {}
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"id": "19f3e39b-9bec-42bb-b186-0e6d940cde23",
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"id": "8f8c344f-cfa2-4cf5-b669-a977348af5f6",
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"id": "00ad9faa-de68-4575-86bd-1a3d8bb9cd89",
+			"key": "CompanyKey",
+			"value": ""
+		},
+		{
+			"id": "5b4c3a13-8ec2-4fd0-b74c-bb33854ea937",
+			"key": "Password",
+			"value": ""
+		},
+		{
+			"id": "b7acdc25-aa28-41ac-8d43-22f8132fe36b",
+			"key": "UserName",
+			"value": ""
+		},
+		{
+			"id": "f1ea05df-2e00-45cd-b221-73c19d8b8445",
+			"key": "urltoken",
+			"value": ""
+		},
+		{
+			"id": "f70d455d-828c-4be1-9e96-cf9bbc2d0124",
+			"key": "companyKey",
+			"value": ""
+		},
+		{
+			"id": "1a207850-5fd0-49bf-a0fc-46b188d39f0f",
+			"key": "password",
+			"value": ""
+		},
+		{
+			"id": "74bf6b87-99a5-4f7a-98ed-2b7ee0ba7433",
+			"key": "userName",
+			"value": ""
+		},
+		{
+			"id": "4e7e3935-080b-49af-aa3c-517fde7e022a",
+			"key": "CloudTenantID",
+			"value": ""
+		},
+		{
+			"id": "9482ad76-3822-4527-bd78-4528386e585f",
+			"key": "Origin",
+			"value": ""
+		},
+		{
+			"id": "84450223-df1c-4551-8200-f92675e2856f",
+			"key": "Source",
+			"value": ""
+		},
+		{
+			"id": "f164534f-3e03-4706-a3cd-ded1b3e171ab",
+			"key": "Token",
+			"value": ""
+		},
+		{
+			"id": "6cdd98a8-3d40-4fcb-9e69-ae1b873de9b6",
+			"key": "urlelectronicbillingservice",
+			"value": ""
+		},
+		{
+			"id": "18db2cac-70b0-4f60-b93a-c1d9dcf02d64",
+			"key": "token",
+			"value": ""
+		},
+		{
+			"id": "40d28914-b714-429b-adbf-b628c740575e",
+			"key": "index",
+			"value": ""
+		},
+		{
+			"id": "63026a69-d80b-411e-9898-7144d4a6df78",
+			"key": "jsonTest",
+			"value": ""
+		},
+		{
+			"id": "50b5546e-3257-4a4e-9342-895619e96127",
+			"key": "pathNameIndexByProperties",
+			"value": ""
+		},
+		{
+			"id": "3a9bfba5-02b2-44e3-96d8-7ddb588769b0",
+			"key": "pathlevel",
+			"value": ""
+		},
+		{
+			"id": "bc75614d-1b57-4060-a687-ea1f98b80a05",
+			"key": "propertyList",
+			"value": ""
+		},
+		{
+			"id": "32827605-4dc8-4a29-b662-89dea68c11f0",
+			"key": "scenario",
+			"value": ""
+		},
+		{
+			"id": "77a0c41f-cb02-47f4-a873-c2b186f57085",
+			"key": "statusGetPayroll",
+			"value": ""
+		},
+		{
+			"id": "8d910ba8-0994-4523-a2a3-17e8ad70811e",
+			"key": "reporte",
+			"value": ""
+		},
+		{
+			"id": "a5844d37-1504-4753-b32b-642ba5fecbb1",
+			"key": "jsonSource",
+			"value": ""
+		},
+		{
+			"id": "4a3d01c7-5150-4f7e-ac54-a73e6b0e092b",
+			"key": "saveRequest",
+			"value": ""
+		},
+		{
+			"id": "6f89b064-d3e8-4c36-8ae7-a71c98082f29",
+			"key": "statusGetByTransactionResult",
+			"value": ""
+		},
+		{
+			"id": "33079de8-b66b-4da1-8575-3449c627fa57",
+			"key": "saveRequestBody",
+			"value": ""
+		}
+	],
+	"protocolProfileBehavior": {}
+}
